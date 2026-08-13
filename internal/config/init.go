@@ -52,7 +52,7 @@ func InitConfig(configDir string) (*Config, error) {
 		for _, dir := range strings.Split(watchDirsInput, ",") {
 			dir = strings.TrimSpace(dir)
 			if dir != "" {
-				// Раскрываем ~
+				
 				if strings.HasPrefix(dir, "~") {
 					dir = filepath.Join(home, dir[1:])
 				}
