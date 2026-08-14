@@ -25,15 +25,18 @@ func InitConfig(configDir string) (*Config, error) {
 	fmt.Printf("Enter backup repository URL: ")
 	backupRepo, err := reader.ReadString('\n')
 	if err != nil {
-		return nil, fmt.Errorf("failed to read input: %w", err)
+		
+		return nil,err 
 	}
 	backupRepo = strings.TrimSpace(backupRepo)
 
 	if backupRepo == "" {
+
 		backupRepo = defaultBackupRepo
 	}
 
 	if backupRepo == "" {
+		slog.Error("Backup repository URL is required")
 		return nil, fmt.Errorf("backup_repo is required")
 	}
 
@@ -41,6 +44,7 @@ func InitConfig(configDir string) (*Config, error) {
 	fmt.Printf("Enter directories to watch (comma-separated, default: %s): ", defaultWatchDir)
 	watchDirsInput, err := reader.ReadString('\n')
 	if err != nil {
+		
 		return nil, fmt.Errorf("failed to read input: %w", err)
 	}
 	watchDirsInput = strings.TrimSpace(watchDirsInput)
