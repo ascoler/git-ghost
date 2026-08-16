@@ -3,48 +3,108 @@ package config
 import (
 	"bufio"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
-	"log/slog"
 )
+
+const (
+	colorReset   = "\033[0m"
+	colorRed     = "\033[31m"
+	colorGreen   = "\033[32m"
+	colorYellow  = "\033[33m"
+	colorBlue    = "\033[34m"
+	colorMagenta = "\033[35m"
+	colorCyan    = "\033[36m"
+	colorGray    = "\033[90m"
+	colorBold    = "\033[1m"
+)
+
+
+const logo = `
+` + colorMagenta + colorBold + ` ██████╗ ██╗████████╗      ██████╗ ██╗  ██╗ ██████╗ ███████╗████████╗
+██╔════╝ ██║╚══██╔══╝     ██╔════╝ ██║  ██║██╔═══██╗██╔════╝╚══██╔══╝
+██║  ███╗██║   ██║        ██║  ███╗███████║██║   ██║███████╗   ██║   
+██║   ██║██║   ██║        ██║   ██║██╔══██║██║   ██║╚════██║   ██║   
+╚██████╔╝██║   ██║        ╚██████╔╝██║  ██║╚██████╔╝███████║   ██║   
+ ╚═════╝ ╚═╝   ╚═╝         ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝   ╚═╝` + colorReset + `
+`
+
+func printHeader(msg string) {
+	fmt.Printf("\n%s%s%s%s\n", colorBold, colorCyan, msg, colorReset)
+	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("─", len(msg)), colorReset)
+}
+
+
+func printPrompt(label string, hint string) {
+	if hint != "" {
+		fmt.Printf("%s%s▶ %s%s %s%s%s\n", colorBold, colorYellow, label, colorReset, colorGray, hint, colorReset)
+	} else {
+		fmt.Printf("%s%s▶ %s%s\n", colorBold, colorYellow, label, colorReset)
+	}
+	fmt.Printf("  ")
+}
+
+
+func printSuccess(msg string) {
+	fmt.Printf("%s%s✓ %s%s\n", colorBold, colorGreen, msg, colorReset)
+}
+
+
+func printInfo(msg string) {
+	fmt.Printf("%s%sℹ %s%s\n", colorBold, colorBlue, msg, colorReset)
+}
+
+
+func printWarning(msg string) {
+	fmt.Printf("%s%s⚠ %s%s\n", colorBold, colorYellow, msg, colorReset)
+}
+
+
+func printError(msg string) {
+	fmt.Printf("%s%s✗ %s%s\n", colorBold, colorRed, msg, colorReset)
+}
+
 
 func InitConfig(configDir string) (*Config, error) {
 	reader := bufio.NewReader(os.Stdin)
 
 	
-	defaultBackupRepo := ""
-	home, _ := os.UserHomeDir()
-	defaultWatchDir := filepath.Join(home, "projects")
-	defaultScanInterval := 300 
+	fmt.Print(logo)
+	fmt.Printf("%s%sAutomatic git backup daemon%s\n\n", colorGray, colorBold, colorReset)
+
+	printHeader("Welcome to Git Ghost Setup")
+	printInfo("Let's configure your backup daemon")
 
 	
-	fmt.Printf("Enter backup repository URL: ")
+	home, _ := os.UserHomeDir()
+	defaultWatchDir := filepath.Join(home, "projects")
+	defaultScanInterval := 300 // 5 минут
+
+	
+	fmt.Println()
+	printPrompt("Backup repository URL", "(e.g. https://github.com/user/git-ghost-backups.git)")
 	backupRepo, err := reader.ReadString('\n')
 	if err != nil {
-		
-		return nil,err 
+		return nil, fmt.Errorf("failed to read input: %w", err)
 	}
 	backupRepo = strings.TrimSpace(backupRepo)
 
 	if backupRepo == "" {
-
-		backupRepo = defaultBackupRepo
-	}
-
-	if backupRepo == "" {
-		slog.Error("Backup repository URL is required")
+		printError("Backup repository URL is required")
 		return nil, fmt.Errorf("backup_repo is required")
 	}
+	printSuccess("Backup repository set")
 
 	
-	fmt.Printf("Enter directories to watch (comma-separated, default: %s): ", defaultWatchDir)
+	fmt.Println()
+	printPrompt("Directories to watch", fmt.Sprintf("(default: %s)", defaultWatchDir))
 	watchDirsInput, err := reader.ReadString('\n')
 	if err != nil {
-		
 		return nil, fmt.Errorf("failed to read input: %w", err)
 	}
 	watchDirsInput = strings.TrimSpace(watchDirsInput)
@@ -56,7 +116,6 @@ func InitConfig(configDir string) (*Config, error) {
 		for _, dir := range strings.Split(watchDirsInput, ",") {
 			dir = strings.TrimSpace(dir)
 			if dir != "" {
-				
 				if strings.HasPrefix(dir, "~") {
 					dir = filepath.Join(home, dir[1:])
 				}
@@ -68,9 +127,16 @@ func InitConfig(configDir string) (*Config, error) {
 	if len(watchDirs) == 0 {
 		return nil, fmt.Errorf("watch_dirs cannot be empty")
 	}
+	printSuccess(fmt.Sprintf("Watching %d director%s", len(watchDirs), func() string {
+		if len(watchDirs) == 1 {
+			return "y"
+		}
+		return "ies"
+	}()))
 
 	
-	fmt.Printf("Enter scan interval in seconds (default: %d): ", defaultScanInterval)
+	fmt.Println()
+	printPrompt("Scan interval in seconds", fmt.Sprintf("(default: %d)", defaultScanInterval))
 	scanIntervalInput, err := reader.ReadString('\n')
 	if err != nil {
 		return nil, fmt.Errorf("failed to read input: %w", err)
@@ -81,13 +147,14 @@ func InitConfig(configDir string) (*Config, error) {
 	if scanIntervalInput != "" {
 		parsed, err := strconv.Atoi(scanIntervalInput)
 		if err != nil {
-			slog.Warn("Invalid scan interval, using default", "default", defaultScanInterval)
+			printWarning(fmt.Sprintf("Invalid scan interval, using default: %d", defaultScanInterval))
 		} else if parsed < 10 {
-			slog.Warn("Scan interval too small, using default", "default", defaultScanInterval)
+			printWarning(fmt.Sprintf("Scan interval too small, using default: %d", defaultScanInterval))
 		} else {
 			scanInterval = parsed
 		}
 	}
+	printSuccess(fmt.Sprintf("Scan interval set to %d seconds", scanInterval))
 
 	
 	config := &Config{
@@ -115,7 +182,35 @@ func InitConfig(configDir string) (*Config, error) {
 		return nil, fmt.Errorf("failed to write config file: %w", err)
 	}
 
-	slog.Info("Config saved", "path", configFilePath)
+	
+	fmt.Println()
+	printHeader("Configuration Saved")
+	printSuccess(fmt.Sprintf("Config saved to %s%s%s", colorBold, configFilePath, colorReset))
+
+	
+	fmt.Println()
+	printHeader("Next Step: GitHub Token")
+	fmt.Printf("  %sBefore starting the daemon, you need to set up a GitHub token:%s\n\n", colorGray, colorReset)
+
+	fmt.Printf("  %s1. Create a new token at:%s\n", colorBold, colorReset)
+	fmt.Printf("     %s%shttps://github.com/settings/tokens/new%s\n\n", colorCyan, colorBold, colorReset)
+
+	fmt.Printf("  %s2. Give it a name like 'git-ghost'%s\n\n", colorBold, colorReset)
+
+	fmt.Printf("  %s3. Select scope:%s %srepo%s (full control of private repositories)\n\n", colorBold, colorReset, colorYellow, colorReset)
+
+	fmt.Printf("  %s4. Generate the token and copy it%s\n\n", colorBold, colorReset)
+
+	fmt.Printf("  %s5. Set it as environment variable:%s\n", colorBold, colorReset)
+	fmt.Printf("     %s%s%s%s\n", colorCyan, colorBold, "export GIT_GHOST_TOKEN=\"ghp_your_token_here\"", colorReset)
+	fmt.Printf("     %s%sor on Windows PowerShell:%s\n", colorGray, colorBold, colorReset)
+	fmt.Printf("     %s%s$env:GIT_GHOST_TOKEN=\"ghp_your_token_here\"%s\n\n", colorCyan, colorBold, colorReset)
+
+	fmt.Printf("  %s⚠ Important:%s %sNever commit this token to git!%s\n\n", colorYellow, colorReset, colorRed, colorReset)
+
+	
+	fmt.Printf("%s%sOnce you've set the token, run:%s\n", colorBold, colorCyan, colorReset)
+	fmt.Printf("  %s%sgit-ghost start%s\n\n", colorBold, colorGreen, colorReset)
 
 	return config, nil
 }
