@@ -70,9 +70,13 @@ func printError(msg string) {
 }
 
 
-func InitConfig(configDir string) (*Config, error) {
+func InitConfig() (*Config, error) {
 	reader := bufio.NewReader(os.Stdin)
-
+	configPath,err := GetDefaultConfigPath()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get config directory: %w", err)
+	}
+	configDir := filepath.Dir(configPath)
 	
 	fmt.Print(logo)
 	fmt.Printf("%s%sAutomatic git backup daemon%s\n\n", colorGray, colorBold, colorReset)
@@ -83,7 +87,7 @@ func InitConfig(configDir string) (*Config, error) {
 	
 	home, _ := os.UserHomeDir()
 	defaultWatchDir := filepath.Join(home, "projects")
-	defaultScanInterval := 300 // 5 минут
+	defaultScanInterval := 300 
 
 	
 	fmt.Println()

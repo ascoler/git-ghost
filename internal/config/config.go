@@ -1,32 +1,59 @@
 package config
 
 import (
-	"gopkg.in/yaml.v3"
 	"log/slog"
 	"os"
+	"path/filepath"
+	"runtime"
+
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	BackupRepo string `yaml:"backup_repo"`
-	WatchDirs []string `yaml:"watch_dirs"`
-	ScanInterval int `yaml:"scan_interval"`
+	BackupRepo   string   `yaml:"backup_repo"`
+	WatchDirs    []string `yaml:"watch_dirs"`
+	ScanInterval int      `yaml:"scan_interval"`
 }
 
 func LoadConfig(path string) (Config, error) {
-	data,err := os.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		slog.Error("Failed to read config file", "error", err)
 		return Config{}, err
 	}
 	var config Config
-	err = yaml.Unmarshal(data,&config)
+	err = yaml.Unmarshal(data, &config)
 	if err != nil {
 		slog.Error("Failed to unmarshal config file", "error", err)
 		return Config{}, err
 	}
 
-	return config,nil
+	return config, nil
 
+}
 
+func GetDefaultConfigPath() (string, error) {
+	var configDir string
 
+	switch runtime.GOOS {
+	case "windows":
+		appData := os.Getenv("APPDATA")
+		if appData == "" {
+			home, err := os.UserHomeDir()
+			if err != nil {
+				return "", err
+			}
+			appData = filepath.Join(home, "AppData", "Roaming")
+		}
+		configDir = filepath.Join(appData, "git-ghost")
+
+	default:
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		configDir = filepath.Join(home, ".config", "git-ghost")
+	}
+
+	return filepath.Join(configDir, "config.yaml"), nil
 }
