@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 )
-
+//сделать concurrent сканирование репозиториев
 type RepositoryInfo struct {
 	Path          string
 	CurrentCommit CommitInfo
