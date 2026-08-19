@@ -42,9 +42,14 @@ func CommitChanges(workTree *git.Worktree) (*plumbing.Hash, error) {
 }
 
 func EnsureRemote(repo *git.Repository, backupURL string) error {
-	_, err := repo.Remote(remoteName)
+	remote, err := repo.Remote(remoteName)
 	if err == nil {
-		return nil
+	
+		if len(remote.Config().URLs) > 0 && remote.Config().URLs[0] == backupURL {
+			return nil 
+		}
+		
+		repo.DeleteRemote(remoteName)
 	}
 
 	_, err = repo.CreateRemote(&config.RemoteConfig{
@@ -52,10 +57,8 @@ func EnsureRemote(repo *git.Repository, backupURL string) error {
 		URLs: []string{backupURL},
 	})
 	if err != nil {
-		slog.Error("Failed to create remote", "error", err)
 		return fmt.Errorf("failed to create remote: %w", err)
 	}
-
 	return nil
 }
 
@@ -108,3 +111,6 @@ func BackupRepository(repo *git.Repository, repoName string, backupURL string, t
 
 	return nil
 }
+
+
+

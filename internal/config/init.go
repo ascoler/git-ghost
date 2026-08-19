@@ -24,7 +24,13 @@ const (
 	colorBold    = "\033[1m"
 )
 
+func GetColorCyan() string {
+	return colorCyan
+}
 
+func GetColorReset() string {
+	return colorReset
+}
 const logo = `
 ` + colorMagenta + colorBold + ` ██████╗ ██╗████████╗      ██████╗ ██╗  ██╗ ██████╗ ███████╗████████╗
 ██╔════╝ ██║╚══██╔══╝     ██╔════╝ ██║  ██║██╔═══██╗██╔════╝╚══██╔══╝
@@ -34,13 +40,16 @@ const logo = `
  ╚═════╝ ╚═╝   ╚═╝         ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝   ╚═╝` + colorReset + `
 `
 
-func printHeader(msg string) {
+func PrintHeader(msg string) {
 	fmt.Printf("\n%s%s%s%s\n", colorBold, colorCyan, msg, colorReset)
 	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("─", len(msg)), colorReset)
 }
+func PrintLogo() {
+	fmt.Print(logo)
+	fmt.Printf("%s%sAutomatic git backup daemon%s\n\n", colorGray, colorBold, colorReset)
+}
 
-
-func printPrompt(label string, hint string) {
+func PrintPrompt(label string, hint string) {
 	if hint != "" {
 		fmt.Printf("%s%s▶ %s%s %s%s%s\n", colorBold, colorYellow, label, colorReset, colorGray, hint, colorReset)
 	} else {
@@ -50,22 +59,22 @@ func printPrompt(label string, hint string) {
 }
 
 
-func printSuccess(msg string) {
+func PrintSuccess(msg string) {
 	fmt.Printf("%s%s✓ %s%s\n", colorBold, colorGreen, msg, colorReset)
 }
 
 
-func printInfo(msg string) {
+func PrintInfo(msg string) {
 	fmt.Printf("%s%sℹ %s%s\n", colorBold, colorBlue, msg, colorReset)
 }
 
 
-func printWarning(msg string) {
+func PrintWarning(msg string) {
 	fmt.Printf("%s%s⚠ %s%s\n", colorBold, colorYellow, msg, colorReset)
 }
 
 
-func printError(msg string) {
+func PrintError(msg string) {
 	fmt.Printf("%s%s✗ %s%s\n", colorBold, colorRed, msg, colorReset)
 }
 
@@ -81,8 +90,8 @@ func InitConfig() (*Config, error) {
 	fmt.Print(logo)
 	fmt.Printf("%s%sAutomatic git backup daemon%s\n\n", colorGray, colorBold, colorReset)
 
-	printHeader("Welcome to Git Ghost Setup")
-	printInfo("Let's configure your backup daemon")
+	PrintHeader("Welcome to Git Ghost Setup")
+	PrintInfo("Let's configure your backup daemon")
 
 	
 	home, _ := os.UserHomeDir()
@@ -91,7 +100,7 @@ func InitConfig() (*Config, error) {
 
 	
 	fmt.Println()
-	printPrompt("Backup repository URL", "(e.g. https://github.com/user/git-ghost-backups.git)")
+	PrintPrompt("Backup repository URL", "(e.g. https://github.com/user/git-ghost-backups.git)")
 	backupRepo, err := reader.ReadString('\n')
 	if err != nil {
 		return nil, fmt.Errorf("failed to read input: %w", err)
@@ -99,14 +108,14 @@ func InitConfig() (*Config, error) {
 	backupRepo = strings.TrimSpace(backupRepo)
 
 	if backupRepo == "" {
-		printError("Backup repository URL is required")
+		PrintError("Backup repository URL is required")
 		return nil, fmt.Errorf("backup_repo is required")
 	}
-	printSuccess("Backup repository set")
+	PrintSuccess("Backup repository set")
 
 	
 	fmt.Println()
-	printPrompt("Directories to watch", fmt.Sprintf("(default: %s)", defaultWatchDir))
+	PrintPrompt("Directories to watch", fmt.Sprintf("(default: %s)", defaultWatchDir))
 	watchDirsInput, err := reader.ReadString('\n')
 	if err != nil {
 		return nil, fmt.Errorf("failed to read input: %w", err)
@@ -131,7 +140,7 @@ func InitConfig() (*Config, error) {
 	if len(watchDirs) == 0 {
 		return nil, fmt.Errorf("watch_dirs cannot be empty")
 	}
-	printSuccess(fmt.Sprintf("Watching %d director%s", len(watchDirs), func() string {
+	PrintSuccess(fmt.Sprintf("Watching %d director%s", len(watchDirs), func() string {
 		if len(watchDirs) == 1 {
 			return "y"
 		}
@@ -140,7 +149,7 @@ func InitConfig() (*Config, error) {
 
 	
 	fmt.Println()
-	printPrompt("Scan interval in seconds", fmt.Sprintf("(default: %d)", defaultScanInterval))
+	PrintPrompt("Scan interval in seconds", fmt.Sprintf("(default: %d)", defaultScanInterval))
 	scanIntervalInput, err := reader.ReadString('\n')
 	if err != nil {
 		return nil, fmt.Errorf("failed to read input: %w", err)
@@ -151,14 +160,14 @@ func InitConfig() (*Config, error) {
 	if scanIntervalInput != "" {
 		parsed, err := strconv.Atoi(scanIntervalInput)
 		if err != nil {
-			printWarning(fmt.Sprintf("Invalid scan interval, using default: %d", defaultScanInterval))
+			PrintWarning(fmt.Sprintf("Invalid scan interval, using default: %d", defaultScanInterval))
 		} else if parsed < 10 {
-			printWarning(fmt.Sprintf("Scan interval too small, using default: %d", defaultScanInterval))
+			PrintWarning(fmt.Sprintf("Scan interval too small, using default: %d", defaultScanInterval))
 		} else {
 			scanInterval = parsed
 		}
 	}
-	printSuccess(fmt.Sprintf("Scan interval set to %d seconds", scanInterval))
+	PrintSuccess(fmt.Sprintf("Scan interval set to %d seconds", scanInterval))
 
 	
 	config := &Config{
@@ -188,12 +197,12 @@ func InitConfig() (*Config, error) {
 
 	
 	fmt.Println()
-	printHeader("Configuration Saved")
-	printSuccess(fmt.Sprintf("Config saved to %s%s%s", colorBold, configFilePath, colorReset))
+	PrintHeader("Configuration Saved")
+	PrintSuccess(fmt.Sprintf("Config saved to %s%s%s", colorBold, configFilePath, colorReset))
 
 	
 	fmt.Println()
-	printHeader("Next Step: GitHub Token")
+	PrintHeader("Next Step: GitHub Token")
 	fmt.Printf("  %sBefore starting the daemon, you need to set up a GitHub token:%s\n\n", colorGray, colorReset)
 
 	fmt.Printf("  %s1. Create a new token at:%s\n", colorBold, colorReset)
