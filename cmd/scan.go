@@ -10,10 +10,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var scanCmd = &cobra.Command{
-	Use:   "scan",
+var statusCmd = &cobra.Command{
+	Use:   "status",
 	Short: "Scan a Git repository for branches and commits",
 	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Git-Ghost status")
+		fmt.Println("--------------------------")
 		path, err := config.GetDefaultConfigPath()
 		if err != nil {
 			slog.Error("Failed to get config path", "error", err)
@@ -30,19 +32,22 @@ var scanCmd = &cobra.Command{
 			return
 		}
 		for i := 0; i < len(repositories); i++ {
+			fmt.Println(i+1)
+			fmt.Println("--------------------------")
 			repo := repositories[i]
 			fmt.Printf("Repository: %s\n", repo.Path)
 			fmt.Println("Branches:")
 			for _, branch := range repo.Branches {
-				fmt.Printf("  - %s (%s)\n", branch.Name, branch.Hash)
+				fmt.Printf("  - %s (%s)\n", branch.Name, branch.Hash[:8])
 			}
 			fmt.Println("Current Commit:")
-			fmt.Printf("  - %s: %s by %s on %s\n", repo.CurrentCommit.Hash, repo.CurrentCommit.Message, repo.CurrentCommit.Author, repo.CurrentCommit.Date)
+			fmt.Printf("  - %s: %s by %s on %s\n", repo.CurrentCommit.Hash[:8], repo.CurrentCommit.Message, repo.CurrentCommit.Author, repo.CurrentCommit.Date)
+			fmt.Println("--------------------------")
 			
 		}
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(scanCmd)
+	rootCmd.AddCommand(statusCmd)
 }

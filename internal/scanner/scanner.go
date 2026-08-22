@@ -13,7 +13,12 @@ type RepositoryInfo struct {
 	CurrentCommit CommitInfo
 	Branches      []BranchInfo
 }
-
+type BackupCommitInfo struct{
+	Hash string 
+	Date string 
+	Author string
+	Message string
+}
 func IsGitRepository(path string) bool {
 	_, err := os.Stat(filepath.Join(path, ".git"))
 	return !os.IsNotExist(err)
@@ -21,6 +26,7 @@ func IsGitRepository(path string) bool {
 
 func InfoRepository(path string) (*RepositoryInfo, error) {
 	repo, err := ScanRepository(path)
+	
 	if err != nil {
 		return nil, err
 	}
@@ -54,6 +60,7 @@ func ShouldSkip(name string) bool {
 	}
 	return skipDirs[name]
 }
+
 
 func ScanRepositories(watchDirs []string) ([]*RepositoryInfo, error) {
 	var repositories []*RepositoryInfo
