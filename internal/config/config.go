@@ -13,6 +13,7 @@ type Config struct {
 	BackupRepo   string   `yaml:"backup_repo"`
 	WatchDirs    []string `yaml:"watch_dirs"`
 	ScanInterval int      `yaml:"scan_interval"`
+	DBpath string `yaml:"dbpath"`
 }
 
 func LoadConfig(path string) (Config, error) {
@@ -29,10 +30,10 @@ func LoadConfig(path string) (Config, error) {
 	}
 
 	return config, nil
-
 }
 
-func GetDefaultConfigPath() (string, error) {
+
+func GetDefaultConfigPath() (configPath string, dbPath string, err error) {
 	var configDir string
 
 	switch runtime.GOOS {
@@ -41,7 +42,7 @@ func GetDefaultConfigPath() (string, error) {
 		if appData == "" {
 			home, err := os.UserHomeDir()
 			if err != nil {
-				return "", err
+				return "", "", err
 			}
 			appData = filepath.Join(home, "AppData", "Roaming")
 		}
@@ -50,10 +51,13 @@ func GetDefaultConfigPath() (string, error) {
 	default:
 		home, err := os.UserHomeDir()
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		configDir = filepath.Join(home, ".config", "git-ghost")
 	}
 
-	return filepath.Join(configDir, "config.yaml"), nil
+	configPath = filepath.Join(configDir, "config.yaml")
+	dbPath = filepath.Join(configDir, "git-ghost.db")
+
+	return configPath, dbPath, nil
 }

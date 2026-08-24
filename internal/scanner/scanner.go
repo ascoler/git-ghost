@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	
 )
 //сделать concurrent сканирование репозиториев
 type RepositoryInfo struct {
@@ -80,6 +81,7 @@ func ScanRepositories(watchDirs []string) ([]*RepositoryInfo, error) {
 			continue
 		}
 
+
 		err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				slog.Warn("Error accessing path", "path", path, "error", err)
@@ -98,6 +100,8 @@ func ScanRepositories(watchDirs []string) ([]*RepositoryInfo, error) {
 					failedCount++
 					return filepath.SkipDir
 				}
+				
+				
 				repositories = append(repositories, repoInfo)
 				return filepath.SkipDir
 			}

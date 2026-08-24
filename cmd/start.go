@@ -3,11 +3,13 @@ package cmd
 import (
 	"context"
 	"fmt"
+	
 	"os"
 	"os/signal"
 	"path/filepath"
 	"time"
 
+	"git-ghost/internal/DataBase"
 	"git-ghost/internal/backup"
 	"git-ghost/internal/config"
 	"git-ghost/internal/scanner"
@@ -22,7 +24,7 @@ var startCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		config.PrintLogo()
 
-		configPath, err := config.GetDefaultConfigPath()
+		configPath,_, err := config.GetDefaultConfigPath()
 		if err != nil {
 			config.PrintError(fmt.Sprintf("Failed to get config path: %v", err))
 			return
@@ -67,6 +69,7 @@ var startCmd = &cobra.Command{
 		ticker := time.NewTicker(time.Duration(cfg.ScanInterval) * time.Second)
 		defer ticker.Stop()
 
+		// Первый бэкап сразу
 		backupAll(cfg, token)
 
 		for {
@@ -98,20 +101,35 @@ func backupAll(cfg config.Config, token string) {
 
 	config.PrintInfo(fmt.Sprintf("Found %d repositories", len(repos)))
 
+	dbPath := cfg.DBpath
+	
+
+	db, err := database.Open(dbPath)
+	if err != nil {
+		config.PrintError(fmt.Sprintf("Failed to open database: %v", err))
+		return
+	}
+	defer db.Close()
+
 	successCount := 0
 	for _, repo := range repos {
 		gitRepo, err := git.PlainOpen(repo.Path)
 		if err != nil {
 			config.PrintError(fmt.Sprintf("Failed to open %s: %v", repo.Path, err))
+			db.UpdateRepoState(repo.Path, "error", err.Error())
 			continue
 		}
+
 		repoName := filepath.Base(repo.Path)
 		err = backup.BackupRepository(gitRepo, repoName, cfg.BackupRepo, token)
 		if err != nil {
 			config.PrintError(fmt.Sprintf("Failed to backup %s: %v", repo.Path, err))
+			db.UpdateRepoState(repo.Path, "error", err.Error())
 			continue
 		}
 
+		
+		db.UpdateRepoState(repo.Path, "ok", "")
 		config.PrintSuccess(fmt.Sprintf("Backed up: %s", repo.Path))
 		successCount++
 	}
