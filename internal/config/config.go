@@ -33,7 +33,7 @@ func LoadConfig(path string) (Config, error) {
 }
 
 
-func GetDefaultConfigPath() (configPath string, dbPath string, err error) {
+func GetDefaultPaths() (configPath string, dbPath string, err error) {
 	var configDir string
 
 	switch runtime.GOOS {

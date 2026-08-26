@@ -54,7 +54,9 @@ func (db *DB) UpdateRepoState(path string, status string, lastError string) erro
 		LastError:  lastError,
 		UpdatedAt: now,
 	}
-	
+	if status == "ok"{
+		state.LastBackup = &now
+	}
 	
 	return db.Where("path = ?", path).Assign(state).FirstOrCreate(&state).Error
 }

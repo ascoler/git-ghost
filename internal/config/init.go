@@ -81,7 +81,7 @@ func PrintError(msg string) {
 
 func InitConfig() (*Config, error) {
 	reader := bufio.NewReader(os.Stdin)
-	configPath,dbpath,err := GetDefaultConfigPath()
+	configPath,dbpath,err := GetDefaultPaths()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config directory: %w", err)
 	}

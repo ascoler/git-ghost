@@ -16,7 +16,7 @@ var statusCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Git-Ghost status")
 		fmt.Println("--------------------------")
-		path,_, err := config.GetDefaultConfigPath()
+		path,_, err := config.GetDefaultPaths()
 		if err != nil {
 			slog.Error("Failed to get config path", "error", err)
 			return

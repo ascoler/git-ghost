@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"git-ghost/internal/DataBase"
+	database "git-ghost/internal/DataBase"
 	"git-ghost/internal/backup"
 	"git-ghost/internal/config"
 	"git-ghost/internal/scanner"
@@ -24,7 +24,7 @@ var startCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		config.PrintLogo()
 
-		configPath,_, err := config.GetDefaultConfigPath()
+		configPath,_, err := config.GetDefaultPaths()
 		if err != nil {
 			config.PrintError(fmt.Sprintf("Failed to get config path: %v", err))
 			return
@@ -69,7 +69,7 @@ var startCmd = &cobra.Command{
 		ticker := time.NewTicker(time.Duration(cfg.ScanInterval) * time.Second)
 		defer ticker.Stop()
 
-		// Первый бэкап сразу
+	
 		backupAll(cfg, token)
 
 		for {
