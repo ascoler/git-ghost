@@ -71,7 +71,3 @@ git-ghost/
 
 🔨 **Active development / MVP** — the base structure and dependencies are in place.  
 The daemon core, command system, and backup logic are currently being implemented.
-
-## License
-
-MIT
