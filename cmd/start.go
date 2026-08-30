@@ -127,11 +127,20 @@ func backupAll(cfg config.Config, token string) {
 			db.UpdateRepoState(repo.Path, "error", err.Error())
 			continue
 		}
-
+		update,err := db.GetHashRepo(repo.Path,repo.CurrentCommit.Hash) 
+		if err != nil{
+			config.PrintError(fmt.Sprintf("Failed to backup %s: %v", repo.Path, err))
+			db.UpdateRepoState(repo.Path, "error", err.Error())
+			continue
+		}
+		if update == true{
+			db.UpdateRepoState(repo.Path, "ok", "",repo.CurrentCommit.Hash)
+			config.PrintSuccess(fmt.Sprintf("Backed up: %s", repo.Path))
+			successCount++
+		}else{
+			config.PrintInfo("Nothing to update")
+		}
 		
-		db.UpdateRepoState(repo.Path, "ok", "")
-		config.PrintSuccess(fmt.Sprintf("Backed up: %s", repo.Path))
-		successCount++
 	}
 
 	if successCount > 0 {

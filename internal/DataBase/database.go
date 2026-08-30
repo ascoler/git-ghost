@@ -9,6 +9,7 @@ import (
 type RepoState struct {
 	ID         uint `gorm:"primarykey"`
 	Path       string `gorm:"uniqueIndex;not null"`
+	Hash string `gorm:"column:hash"`
 	LastBackup *time.Time
 	Status     string `gorm:"default:'never'"` 
 	LastError  string
@@ -42,13 +43,24 @@ func (db *DB) Close() error {
 	}
 	return sqlDB.Close()
 }
+func (db *DB) GetHashRepo(path string,hash string) (bool,error) {
+	var state RepoState
+	result := db.Where("path =  ?",path).First(&state)
+	if result.Error != nil{
+		return false,result.Error
+	}
+	if hash == state.Hash {
+		return false,nil
+	}
+	return true,nil
+}
 
-
-func (db *DB) UpdateRepoState(path string, status string, lastError string) error {
+func (db *DB) UpdateRepoState(path string, status string, lastError string,hash ...string) error {
 	now := time.Now()
 	
 	state := RepoState{
 		Path:       path,
+		Hash: 		hash[0],
 		LastBackup: &now,
 		Status:     status,
 		LastError:  lastError,
