@@ -86,67 +86,77 @@ var startCmd = &cobra.Command{
 }
 
 func backupAll(cfg config.Config, token string) {
-	fmt.Printf("\n[%s] Scanning repositories...\n", time.Now().Format("15:04:05"))
+    fmt.Printf("\n[%s] Scanning repositories...\n", time.Now().Format("15:04:05"))
 
-	repos, err := scanner.ScanRepositories(cfg.WatchDirs)
-	if err != nil {
-		config.PrintError(fmt.Sprintf("Failed to scan repositories: %v", err))
-		return
-	}
+    repos, err := scanner.ScanRepositories(cfg.WatchDirs)
+    if err != nil {
+        config.PrintError(fmt.Sprintf("Failed to scan repositories: %v", err))
+        return
+    }
 
-	if len(repos) == 0 {
-		config.PrintWarning("No repositories found")
-		return
-	}
+    if len(repos) == 0 {
+        config.PrintWarning("No repositories found")
+        return
+    }
 
-	config.PrintInfo(fmt.Sprintf("Found %d repositories", len(repos)))
+    config.PrintInfo(fmt.Sprintf("Found %d repositories", len(repos)))
 
-	dbPath := cfg.DBpath
-	
+    db, err := database.Open(cfg.DBpath)
+    if err != nil {
+        config.PrintError(fmt.Sprintf("Failed to open database: %v", err))
+        return
+    }
+    defer db.Close()
 
-	db, err := database.Open(dbPath)
-	if err != nil {
-		config.PrintError(fmt.Sprintf("Failed to open database: %v", err))
-		return
-	}
-	defer db.Close()
+    successCount := 0
+    skippedCount := 0
 
-	successCount := 0
-	for _, repo := range repos {
-		gitRepo, err := git.PlainOpen(repo.Path)
-		if err != nil {
-			config.PrintError(fmt.Sprintf("Failed to open %s: %v", repo.Path, err))
-			db.UpdateRepoState(repo.Path, "error", err.Error())
-			continue
-		}
-
-		repoName := filepath.Base(repo.Path)
-		err = backup.BackupRepository(gitRepo, repoName, cfg.BackupRepo, token)
-		if err != nil {
-			config.PrintError(fmt.Sprintf("Failed to backup %s: %v", repo.Path, err))
-			db.UpdateRepoState(repo.Path, "error", err.Error())
-			continue
-		}
-		update,err := db.GetHashRepo(repo.Path,repo.CurrentCommit.Hash) 
-		if err != nil{
-			config.PrintError(fmt.Sprintf("Failed to backup %s: %v", repo.Path, err))
-			db.UpdateRepoState(repo.Path, "error", err.Error())
-			continue
-		}
-		if update == true{
-			db.UpdateRepoState(repo.Path, "ok", "",repo.CurrentCommit.Hash)
-			config.PrintSuccess(fmt.Sprintf("Backed up: %s", repo.Path))
-			successCount++
-		}else{
-			config.PrintInfo("Nothing to update")
-		}
+    for _, repo := range repos {
+        
 		
-	}
+        needsBackup, err := db.GetHashRepo(repo.Path, repo.CurrentCommit.Hash)
+        if err != nil {
+            config.PrintError(fmt.Sprintf("DB error for %s: %v", repo.Path, err))
+            continue
+        }
 
-	if successCount > 0 {
-		fmt.Println()
-		config.PrintSuccess(fmt.Sprintf("Backup complete: %d/%d repositories", successCount, len(repos)))
-	}
+        if !needsBackup {
+            config.PrintInfo(fmt.Sprintf("Skipped (no changes): %s", repo.Path))
+            skippedCount++
+            continue
+        }
+
+        
+        gitRepo, err := git.PlainOpen(repo.Path)
+        if err != nil {
+            config.PrintError(fmt.Sprintf("Failed to open %s: %v", repo.Path, err))
+            db.UpdateRepoState(repo.Path, "error", err.Error())
+            continue
+        }
+
+        
+        repoName := filepath.Base(repo.Path)
+        err = backup.BackupRepository(gitRepo, repoName, cfg.BackupRepo, token)
+        if err != nil {
+            config.PrintError(fmt.Sprintf("Failed to backup %s: %v", repo.Path, err))
+            db.UpdateRepoState(repo.Path, "error", err.Error())
+            continue
+        }
+
+        
+        db.UpdateRepoState(repo.Path, "ok", "", repo.CurrentCommit.Hash)
+        config.PrintSuccess(fmt.Sprintf("Backed up: %s", repo.Path))
+        successCount++
+    }
+
+    if skippedCount > 0 {
+        config.PrintInfo(fmt.Sprintf("Skipped %d repositories (no changes)", skippedCount))
+    }
+
+    if successCount > 0 {
+        fmt.Println()
+        config.PrintSuccess(fmt.Sprintf("Backup complete: %d/%d repositories", successCount, len(repos)))
+    }
 }
 
 func init() {

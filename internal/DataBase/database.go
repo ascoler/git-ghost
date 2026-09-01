@@ -46,6 +46,9 @@ func (db *DB) Close() error {
 func (db *DB) GetHashRepo(path string,hash string) (bool,error) {
 	var state RepoState
 	result := db.Where("path =  ?",path).First(&state)
+	if result.Error == gorm.ErrRecordNotFound {
+		return true,nil
+	}
 	if result.Error != nil{
 		return false,result.Error
 	}
@@ -66,9 +69,13 @@ func (db *DB) UpdateRepoState(path string, status string, lastError string,hash 
 		LastError:  lastError,
 		UpdatedAt: now,
 	}
+	if len(hash) > 0 && hash[0] != "" {
+        state.Hash = hash[0]
+    }
 	if status == "ok"{
 		state.LastBackup = &now
 	}
+	
 	
 	return db.Where("path = ?", path).Assign(state).FirstOrCreate(&state).Error
 }
