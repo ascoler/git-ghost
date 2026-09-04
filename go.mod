@@ -4,6 +4,7 @@ go 1.26.5
 
 require (
 	github.com/go-git/go-git/v5 v5.19.2
+	github.com/kardianos/service v1.3.0
 	github.com/spf13/cobra v1.10.2
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/sqlite v1.6.0
