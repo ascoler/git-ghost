@@ -146,7 +146,20 @@ func InitConfig() (*Config, error) {
 		}
 		return "ies"
 	}()))
-
+	fmt.Println()
+	PrintPrompt("Directory to pull repo", "(e.g. /home/user/git-ghost-backups)")
+	PullDir,err := reader.ReadString('\n')
+	if err != nil {
+		return nil, fmt.Errorf("failed to read input: %w", err)
+	}
+	PullDir = strings.TrimSpace(PullDir)
+	if PullDir == "" {
+		PrintError("Directory to pull repo is required")
+		return nil, fmt.Errorf("pull_dir is required")
+	}
+	PrintSuccess(fmt.Sprintf("Pull directory set to %s", PullDir))
+	
+	
 	
 	fmt.Println()
 	PrintPrompt("Scan interval in seconds", fmt.Sprintf("(default: %d)", defaultScanInterval))
@@ -172,6 +185,7 @@ func InitConfig() (*Config, error) {
 	
 	config := &Config{
 		BackupRepo:   backupRepo,
+		BackDir:        PullDir,
 		WatchDirs:    watchDirs,
 		ScanInterval: scanInterval,
 		DBpath: dbpath,

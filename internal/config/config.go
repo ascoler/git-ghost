@@ -10,7 +10,9 @@ import (
 )
 
 type Config struct {
+
 	BackupRepo   string   `yaml:"backup_repo"`
+	BackDir string `yaml:"backup_dir"`
 	WatchDirs    []string `yaml:"watch_dirs"`
 	ScanInterval int      `yaml:"scan_interval"`
 	DBpath string `yaml:"dbpath"`
@@ -31,6 +33,9 @@ func LoadConfig(path string) (Config, error) {
 
 	return config, nil
 }
+
+
+
 
 
 func GetDefaultPaths() (configPath string, dbPath string, err error) {
