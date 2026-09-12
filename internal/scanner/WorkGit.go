@@ -102,9 +102,3 @@ func GetCommitInfo(commit *object.Commit) CommitInfo {
 	}
 }
 
-
-
-
-
-
-
